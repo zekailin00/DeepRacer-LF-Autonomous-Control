@@ -1,0 +1,9 @@
+// src/Main.lf
+target CCpp{
+    coordination: decentralized
+};
+import Camera from "Camera.lf"
+
+federated reactor {
+    Camera = new Camera();
+}

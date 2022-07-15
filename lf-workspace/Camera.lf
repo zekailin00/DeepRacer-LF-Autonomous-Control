@@ -1,0 +1,135 @@
+// src/Camera.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "camera_node.h"
+    std::shared_ptr<CameraNode> camera_node;
+    void* displayPub_action_ptr;
+    void* videoPub_action_ptr;
+    trigger_handle_t (*lf_schedule_ptr)(void*, interval_t); 
+    deepracer_interfaces_pkg::msg::CameraMsg msg;
+
+
+    void scanCameraIndex(const std::vector<int> cameraIdxList) {
+        for (auto idx : cameraIdxList){
+            RCLCPP_INFO(camera_node->get_logger(), "Scanning Camera Index %d ", idx);
+            auto cap = cv::VideoCapture(idx, cv::CAP_V4L);
+            cv::Mat test_frame;
+            cap >> test_frame;
+            if(test_frame.empty() || !cap.isOpened()){
+                RCLCPP_ERROR(camera_node->get_logger(), "Unable to create video capture stream on index: %d", idx);
+                continue;
+            }
+            // Add to valid video capture list
+            camera_node->videoCaptureList_.push_back(cap);
+            camera_node->videoCaptureList_.back().set(cv::CAP_PROP_FOURCC,
+                                        cv::VideoWriter::fourcc('M', 'J', 'P', 'G'));
+            // Add to valid video index list
+            camera_node->videoIndexList_.push_back(idx);
+        }
+        switch(camera_node->videoIndexList_.size()) {
+            case 0 :
+                RCLCPP_ERROR(camera_node->get_logger(), "[Camera Package] No cameras detected.");
+                break;
+            case 1 :
+                RCLCPP_INFO(camera_node->get_logger(), "[Camera Package] Single Camera Detected at index:  %d", camera_node->videoIndexList_[0]);
+                break;
+            case 2 :
+                RCLCPP_INFO(camera_node->get_logger(), "[Camera Package] Stereo Cameras Detected at indexes:  %d, %d", camera_node->videoIndexList_[0], camera_node->videoIndexList_[1]);
+                break;
+            default :
+                RCLCPP_ERROR(camera_node->get_logger(), "[Camera Package] Error while detecting cameras.");
+        }
+    }
+
+    void produceFrames() {
+        while (camera_node->produceFrames_) {
+            for (auto& cap : camera_node->videoCaptureList_) {
+                if (!cap.isOpened()) {
+                    continue;
+                }
+                cv::Mat frame;
+                cap >> frame;
+                if (frame.empty()) {
+                    RCLCPP_ERROR(camera_node->get_logger(), "No frame returned. Check if camera is plugged in correctly.");
+                    continue;
+                }
+                try {
+                    if(camera_node->resizeImages_) {
+                        cv::resize(frame, frame, cv::Size(DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT));
+                    }
+                    msg.images.push_back(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg().get()));
+                }
+                catch (cv_bridge::Exception& e) {
+                    RCLCPP_ERROR(camera_node->get_logger(), "cv_bridge exception: %s", e.what());
+                    camera_node->produceFrames_ = false;
+                    return;
+                }
+            }
+            try {
+                //displayPub_->publish(msg.images.front());
+                //videoPub_->publish(msg);
+                lf_schedule_ptr(displayPub_action_ptr, 0);
+                lf_schedule_ptr(videoPub_action_ptr, 0);
+            }
+                catch (const std::exception &ex) {
+                RCLCPP_ERROR(camera_node->get_logger(), "Publishing camera images to topics failed %s", ex.what());
+            }
+        }
+    }
+=}
+
+
+reactor Camera {
+
+    physical action displayPub_action;
+    physical action videoPub_action;
+
+    input media_state_input: bool;
+    output video_mjpeg: std::shared_ptr<deepracer_interfaces_pkg::msg::CameraMsg>;
+    output display_mjpeg: std::shared_ptr<deepracer_interfaces_pkg::msg::CameraMsg>;
+
+    reaction(startup) -> displayPub_action, videoPub_action{=
+        displayPub_action_ptr = displayPub_action;
+        videoPub_action_ptr = videoPub_action;
+        lf_schedule_ptr = lf_schedule;
+
+        rclcpp::init(0, NULL);
+
+        std::vector<int> cameraIndex {4, 3, 2, 1, 0};
+        camera_node = std::make_shared<CameraNode>("camera_node", cameraIndex);
+    =}
+
+    reaction(media_state_input) {=
+        camera_node->produceFrames_ = false;
+        if (camera_node->videoWorker_.joinable()) {
+            camera_node->videoWorker_.join();
+        }
+        int i = 0;
+        // Check that we are collecting from the mjpeg channel.
+        for (auto& cap : camera_node->videoCaptureList_) {
+            if(!cap.isOpened() || cap.get(cv::CAP_PROP_FOURCC) != cv::VideoWriter::fourcc('M', 'J', 'P', 'G')) {
+                RCLCPP_ERROR(camera_node->get_logger(), "Unable to get MJPEG stream: %d", camera_node->videoIndexList_[i]);
+                //TODO: res->error = 1;
+                return;
+            }
+            ++i;
+        }
+        if (media_state_input->value) {
+            camera_node->produceFrames_ = true;
+            camera_node->videoWorker_ = std::thread([&]{produceFrames();});
+        }
+        //TODO: res->error = 0;
+    =}
+
+    reaction(videoPub_action) -> display_mjpeg {=
+        lf_set(display_mjpeg, std::make_shared<deepracer_interfaces_pkg::msg::CameraMsg>(msg));
+    =}
+
+    reaction(shutdown) {=
+        rclcpp::shutdown();
+    =}
+}
