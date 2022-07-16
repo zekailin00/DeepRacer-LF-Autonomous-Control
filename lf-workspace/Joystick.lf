@@ -1,0 +1,94 @@
+// src/Joystick.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "joy-ctrl.h"
+=}
+
+reactor Joystick {
+    // Instantiate the publisher node as a sate variable
+    //state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
+    output servo_msg:std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+    timer t(0, 25 ms);
+
+    state count_ : size_t;
+    state JOYSTICK_DEV : std::string;
+    state data : ControllerData;
+    state joystick_fd : int;
+    state num_of_axis : int;
+    state num_of_buttons : int;
+    state name_of_joystick : char[80];
+
+    reaction(startup) {=
+
+        self->JOYSTICK_DEV = "/dev/input/js0";
+        self->count_ = 0;
+
+
+        std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
+
+        self->joystick_fd = open(self->JOYSTICK_DEV.c_str(), O_RDONLY | O_NONBLOCK);
+        if (self->joystick_fd < 0) 
+        {
+            lf_print( "[LF] Joystick error: %d", self->joystick_fd); 
+            exit(1);
+        }
+
+        std::cout<< "[LF] Read joystick meta data."<<std::endl;
+
+        ioctl(self->joystick_fd, JSIOCGAXES, &(self->num_of_axis));
+        lf_print("Joystick Number of Axes: %d", self->num_of_axis);
+
+        ioctl(self->joystick_fd, JSIOCGBUTTONS, &(self->num_of_buttons));
+        lf_print( "Joystick Number of Buttons: %d", self->num_of_buttons);
+
+        ioctl(self->joystick_fd, JSIOCGNAME(80), self->name_of_joystick); 
+        lf_print( "Joystick Connected: %s", self->name_of_joystick);
+    
+        self->data.joy_button.resize(self->num_of_buttons, 0);
+        self->data.joy_axis.resize(self->num_of_axis, 0);
+
+        //std::cout<< "[LF] Finished reactor startup."<<std::endl;
+    =}
+
+    reaction(t) -> servo_msg {=
+        self->count_++;
+        js_event js, prev_js;
+        int retval;
+        bool emptyQueue = false;
+        //lf_print( "Enter while(read)...");
+        int while_count = 0; 
+        while (retval = read (self->joystick_fd, &js, sizeof(js_event)) > 0) {
+            prev_js = js;
+            while_count++;
+
+            switch (prev_js.type & ~JS_EVENT_INIT)
+                {
+                case JS_EVENT_AXIS:
+                    if(!((int)prev_js.number>=self->data.joy_axis.size()))
+                    self->data.joy_axis[(int)prev_js.number]= prev_js.value;
+                    break;
+                case JS_EVENT_BUTTON:
+                    if(!((int)prev_js.number>=self->data.joy_button.size()))
+                    self->data.joy_button[(int)prev_js.number]= prev_js.value;
+                    break;
+            }
+        }
+
+        //lf_print( "Exit while(read) - Return value of read is: %d", retval);
+        //lf_print( "Exit while(read) - while count: %d", while_count);
+
+        std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>();  
+        servoMsg->angle = -(static_cast<float>(self->data.joy_axis[0])/INT16_MAX);
+        servoMsg->throttle = -(static_cast<float>(self->data.joy_axis[1])/INT16_MAX); 
+        auto physical_time = get_elapsed_physical_time();
+        //lf_print( "physical time: %lld", physical_time);
+        //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
+        lf_set(servo_msg, servoMsg);
+    =}
+
+    reaction(shutdown) {==}
+}

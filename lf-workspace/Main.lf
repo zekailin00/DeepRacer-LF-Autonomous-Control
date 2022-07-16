@@ -3,7 +3,12 @@ target CCpp{
     coordination: decentralized
 };
 import Camera from "Camera.lf"
+import Joystick from "Joystick.lf"
+import Servo from "Servo.lf"
 
 federated reactor {
     Camera = new Camera();
+    Joystick = new Joystick();
+    Servo = new Servo();
+    Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
 }

@@ -1,0 +1,51 @@
+// src/Servo.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "rclcpp/rclcpp.hpp"
+    #include "servo_pkg/servo_mgr.hpp"
+    #include "servo_pkg/led_mgr.hpp"
+    #include <rclcpp/strategies/message_pool_memory_strategy.hpp>
+    #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
+    #include "deepracer_interfaces_pkg/srv/get_calibration_srv.hpp"
+    #include "deepracer_interfaces_pkg/srv/set_calibration_srv.hpp"
+    #include "deepracer_interfaces_pkg/srv/set_led_ctrl_srv.hpp"
+    #include "deepracer_interfaces_pkg/srv/get_led_ctrl_srv.hpp"
+    #include "deepracer_interfaces_pkg/srv/servo_gpio_srv.hpp"
+=}
+
+reactor Servo {
+    // Instantiate the subscriber node as a sate variable
+    state node : std::shared_ptr<rclcpp::Node>;
+    state pServoMgr : std::shared_ptr<PWM::ServoMgr>;
+    state pLedMgr : std::shared_ptr<PWM::LedMgr>;
+
+    input servo_msg : std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+    input raw_pwm : std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+
+    reaction(startup) {=
+        rclcpp::init(0, NULL);
+        self->node = rclcpp::Node::make_shared("servo_node");
+        self->pServoMgr = std::make_unique<PWM::ServoMgr>(self->node->get_logger());
+        self->pLedMgr = std::make_unique<PWM::LedMgr>(self->node->get_logger());
+
+        lf_print("[LF Servo Reactor] Initialized");
+    =}
+
+    reaction(servo_msg) {=
+        //lf_print("[LF::Servo::servo_msg] Angle: %f, Throttle %f", servo_msg->value->angle, servo_msg->value->throttle);
+        self->pServoMgr->servoSubscriber(servo_msg->value);
+    =}
+
+    reaction(raw_pwm) {=
+       // lf_print("[LF::Servo::raw_pwm] Angle: %f, Throttle %f", raw_pwm->value->angle, raw_pwm->value->throttle);
+        self->pServoMgr->rawPWMSubscriber(raw_pwm->value);
+    =}
+
+    reaction(shutdown) {=
+        rclcpp::shutdown();
+    =}
+}
