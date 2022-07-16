@@ -6,6 +6,10 @@ Both ROS program and LF program are compiled on a Linux machine. After build suc
 
 ## Develope LF program
 
+`ros-workspace` ROS pacakges can be added into this directory. 
+
+`lf-workspace` LF files can be added into this directory. Usually, one LF file matches one ROS pacakge inside `ros-workspace`
+
 `. lfcbuild.sh` compiles LF program on the Linux machine automatically, it has all ROS environment dependencies included and rebuilds ROS packages every time it is run. 
 
 `. clear.sh` It removes all LF and ROS output files generated from running `. lfcbuild.sh`
