@@ -74,6 +74,7 @@ preamble {=
                 //displayPub_->publish(msg.images.front());
                 //videoPub_->publish(msg);
                 camera_msg = msg;
+                std::cout<<"send message."<<std::endl;
                 lf_schedule_ptr(displayPub_action_ptr, 0);
                 lf_schedule_ptr(videoPub_action_ptr, 0);
             }
