@@ -97,11 +97,11 @@ reactor Joystick {
         if (self->data.joy_button[0] > 0 && self->pause == 0) {
             lf_set(activate_cam, true);
             lf_print("Activate Camera");
-            self->pause = 5;
+            self->pause = 10;
         } else if (self->data.joy_button[1] > 0 && self->pause == 0) {
             lf_set(activate_cam, false);
             lf_print("Stop Camera");
-            self->pause = 5;
+            self->pause = 10;
         }
     =}
 

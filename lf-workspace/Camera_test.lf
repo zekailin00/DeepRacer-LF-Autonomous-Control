@@ -1,0 +1,27 @@
+// src/Camera.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "camera_node.h"
+    #include "deepracer_interfaces_pkg/msg/camera_msg.hpp"
+=}
+
+
+reactor Camera_test {
+
+    input display_mjpeg: std::shared_ptr<deepracer_interfaces_pkg::msg::CameraMsg>;
+
+    reaction(startup) {=
+    =}
+
+    reaction(display_mjpeg) {=
+        lf_print("image size: %d.", display_mjpeg->value->images.size());
+    =}
+
+    reaction(shutdown) {=
+
+    =}
+}
