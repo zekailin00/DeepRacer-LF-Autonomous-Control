@@ -10,7 +10,7 @@ preamble {=
     void* displayPub_action_ptr;
     void* videoPub_action_ptr;
     trigger_handle_t (*lf_schedule_ptr)(void*, interval_t); 
-    deepracer_interfaces_pkg::msg::CameraMsg msg;
+    deepracer_interfaces_pkg::msg::CameraMsg camera_msg;
 
 
     void scanCameraIndex(const std::vector<int> cameraIdxList) {
@@ -47,6 +47,7 @@ preamble {=
 
     void produceFrames() {
         while (camera_node->produceFrames_) {
+            deepracer_interfaces_pkg::msg::CameraMsg msg;
             for (auto& cap : camera_node->videoCaptureList_) {
                 if (!cap.isOpened()) {
                     continue;
@@ -72,6 +73,7 @@ preamble {=
             try {
                 //displayPub_->publish(msg.images.front());
                 //videoPub_->publish(msg);
+                camera_msg = msg;
                 lf_schedule_ptr(displayPub_action_ptr, 0);
                 lf_schedule_ptr(videoPub_action_ptr, 0);
             }
@@ -126,7 +128,7 @@ reactor Camera {
     =}
 
     reaction(videoPub_action) -> display_mjpeg {=
-        lf_set(display_mjpeg, std::make_shared<deepracer_interfaces_pkg::msg::CameraMsg>(msg));
+        lf_set(display_mjpeg, std::make_shared<deepracer_interfaces_pkg::msg::CameraMsg>(camera_msg));
     =}
 
     reaction(shutdown) {=
