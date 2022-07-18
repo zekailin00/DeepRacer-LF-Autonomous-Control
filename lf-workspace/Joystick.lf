@@ -22,11 +22,13 @@ reactor Joystick {
     state num_of_axis : int;
     state num_of_buttons : int;
     state name_of_joystick : char[80];
+    state pause: int;
 
     reaction(startup) {=
 
         self->JOYSTICK_DEV = "/dev/input/js0";
         self->count_ = 0;
+        self->pause = 0;
 
 
         std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
@@ -90,9 +92,16 @@ reactor Joystick {
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
         lf_set(servo_msg, servoMsg);
 
-        if (self->data.joy_button[0] > 0) {
-            
+        if (self->pause != 0) self->pause--;
+
+        if (self->data.joy_button[0] > 0 && self->pause == 0) {
+            lf_set(activate_cam, true);
             lf_print("Activate Camera");
+            self->pause = 5;
+        } else if (self->data.joy_button[1] > 0 && self->pause == 0) {
+            lf_set(activate_cam, false);
+            lf_print("Stop Camera");
+            self->pause = 5;
         }
     =}
 
