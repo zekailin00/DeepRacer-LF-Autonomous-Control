@@ -12,6 +12,9 @@ preamble {=
     trigger_handle_t (*lf_schedule_ptr)(void*, interval_t); 
     deepracer_interfaces_pkg::msg::CameraMsg camera_msg;
 
+    int while_loop_count = 0; 
+    int for_loop_count = 0;
+
 
     void scanCameraIndex(const std::vector<int> cameraIdxList) {
         for (auto idx : cameraIdxList){
@@ -47,8 +50,11 @@ preamble {=
 
     void produceFrames() {
         while (camera_node->produceFrames_) {
+            while_loop_count++;
+            std::cout<<"While loop count: " <<while_loop_count<<std::endl;
             deepracer_interfaces_pkg::msg::CameraMsg msg;
             for (auto& cap : camera_node->videoCaptureList_) {
+                std::cout<<"send message."<<std::endl;
                 if (!cap.isOpened()) {
                     continue;
                 }
@@ -58,11 +64,14 @@ preamble {=
                     RCLCPP_ERROR(camera_node->get_logger(), "No frame returned. Check if camera is plugged in correctly.");
                     continue;
                 }
+                for_loop_count++;
+                std::cout<<"for loop count: " << for_loop_count << std::endl;
                 try {
                     if(camera_node->resizeImages_) {
                         cv::resize(frame, frame, cv::Size(DEFAULT_IMAGE_WIDTH, DEFAULT_IMAGE_HEIGHT));
                     }
                     msg.images.push_back(*(cv_bridge::CvImage(std_msgs::msg::Header(), "bgr8", frame).toImageMsg().get()));
+                    std::cout<<"Push image to queue."<<std::endl;
                 }
                 catch (cv_bridge::Exception& e) {
                     RCLCPP_ERROR(camera_node->get_logger(), "cv_bridge exception: %s", e.what());
@@ -74,7 +83,7 @@ preamble {=
                 //displayPub_->publish(msg.images.front());
                 //videoPub_->publish(msg);
                 camera_msg = msg;
-                std::cout<<"send message."<<std::endl;
+                std::cout<<"send message to LF scope."<<std::endl;
                 lf_schedule_ptr(displayPub_action_ptr, 0);
                 lf_schedule_ptr(videoPub_action_ptr, 0);
             }
@@ -107,6 +116,7 @@ reactor Camera {
     =}
 
     reaction(media_state_input) {=
+        std::cout<<"[LF Camera] Change camera state."<<std::endl;
         camera_node->produceFrames_ = false;
         if (camera_node->videoWorker_.joinable()) {
             camera_node->videoWorker_.join();
@@ -122,6 +132,7 @@ reactor Camera {
             ++i;
         }
         if (media_state_input->value) {
+            std::cout<<"[LF Camera] Change state to "<<media_state_input->value<<std::endl;
             camera_node->produceFrames_ = true;
             camera_node->videoWorker_ = std::thread([&]{produceFrames();});
         }
@@ -129,6 +140,7 @@ reactor Camera {
     =}
 
     reaction(videoPub_action) -> display_mjpeg {=
+        std::cout<<"[LF Camera] Set output."<<std::endl;
         lf_set(display_mjpeg, std::make_shared<deepracer_interfaces_pkg::msg::CameraMsg>(camera_msg));
     =}
 
