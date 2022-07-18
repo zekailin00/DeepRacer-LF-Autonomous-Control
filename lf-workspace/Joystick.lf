@@ -90,7 +90,7 @@ reactor Joystick {
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
         lf_set(servo_msg, servoMsg);
 
-        if (self->data.joy_button[0] > 1) {
+        if (self->data.joy_button[0] > 0) {
             
             lf_print("Activate Camera");
         }

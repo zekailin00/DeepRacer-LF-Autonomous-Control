@@ -48,7 +48,7 @@ fi
 # to be responsive to user inputs after all federates
 # are launched.
 RTI -i ${FEDERATION_ID} \
-                        -n 1 \
+                        -n 3 \
                         -c init \
 exchanges-per-interval 10 \
 &
@@ -61,6 +61,12 @@ sleep 1
 echo "#### Launching the federate Camera."
 /root/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
 pids[0]=$!
+echo "#### Launching the federate Joystick."
+/root/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
+pids[1]=$!
+echo "#### Launching the federate Servo."
+/root/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
+pids[2]=$!
 echo "#### Bringing the RTI back to foreground so it can receive Control-C."
 fg %1
 echo "RTI has exited. Wait for federates to exit."
