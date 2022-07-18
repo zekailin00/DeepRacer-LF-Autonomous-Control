@@ -54,7 +54,7 @@ preamble {=
             std::cout<<"While loop count: " <<while_loop_count<<std::endl;
             deepracer_interfaces_pkg::msg::CameraMsg msg;
             for (auto& cap : camera_node->videoCaptureList_) {
-                std::cout<<"send message."<<std::endl;
+                std::cout<<"For each videa capture in the list..."<<std::endl;
                 if (!cap.isOpened()) {
                     continue;
                 }

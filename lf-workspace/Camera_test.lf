@@ -18,6 +18,7 @@ reactor Camera_test {
     =}
 
     reaction(display_mjpeg) {=
+        lf_print("[lf cam_test] reaction received");
         lf_print("image size: %d.", display_mjpeg->value->images.size());
     =}
 
