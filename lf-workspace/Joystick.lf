@@ -12,6 +12,7 @@ reactor Joystick {
     // Instantiate the publisher node as a sate variable
     //state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
     output servo_msg:std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+    output activate_cam: bool;
     timer t(0, 25 ms);
 
     state count_ : size_t;
@@ -54,7 +55,7 @@ reactor Joystick {
         //std::cout<< "[LF] Finished reactor startup."<<std::endl;
     =}
 
-    reaction(t) -> servo_msg {=
+    reaction(t) -> servo_msg, activate_cam {=
         self->count_++;
         js_event js, prev_js;
         int retval;
@@ -88,6 +89,11 @@ reactor Joystick {
         //lf_print( "physical time: %lld", physical_time);
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
         lf_set(servo_msg, servoMsg);
+
+        if (self->data.joy_button[0] > 1) {
+            
+            lf_print("Activate Camera");
+        }
     =}
 
     reaction(shutdown) {==}

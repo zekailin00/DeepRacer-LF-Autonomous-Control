@@ -11,4 +11,5 @@ federated reactor {
     Joystick = new Joystick();
     Servo = new Servo();
     Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
+    Joystick.activate_cam -> Camera.media_state_input;
 }
