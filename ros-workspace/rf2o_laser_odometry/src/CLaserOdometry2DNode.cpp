@@ -131,6 +131,9 @@ void CLaserOdometry2DNode::process()
   }
   else
   {
+    printf("[rplidar] intialized: %d", rf2o_ref.is_initialized() );
+    printf("[rplidar] available: %d", scan_available() );
+
     RCLCPP_WARN(get_logger(), "Waiting for laser_scans....") ;
   }
 }
@@ -141,6 +144,7 @@ void CLaserOdometry2DNode::process()
 
 void CLaserOdometry2DNode::LaserCallBack(const sensor_msgs::msg::LaserScan::SharedPtr new_scan)
 {
+  printf("[rplidar]  messsage recevied. ");
   if (GT_pose_initialized)
   {
     //Keep in memory the last received laser_scan
