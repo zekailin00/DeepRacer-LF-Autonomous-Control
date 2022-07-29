@@ -74,7 +74,7 @@ bool need_exit = false;
         this->get_parameter_or<int>("serial_baudrate", serial_baudrate, 115200/*256000*/);//ros run for A1 A2, change to 256000 if A3
         this->get_parameter_or<std::string>("frame_id", frame_id, "laser_frame");
         this->get_parameter_or<bool>("inverted", inverted, false);
-        this->get_parameter_or<bool>("angle_compensate", angle_compensate, false);
+        this->get_parameter_or<bool>("angle_compensate", angle_compensate, true);
         this->get_parameter_or<std::string>("scan_mode", scan_mode, std::string());
     }
 
