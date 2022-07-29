@@ -1,0 +1,26 @@
+// Rplidar.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include <signal.h>
+
+    #include "rplidar_scan_publisher.h"
+=}
+
+reactor Rplidar {
+    // Instantiate the subscriber node as a sate variable
+    state rplidar_scan_publisher : std::shared_ptr<RPLidarScanPublisher>;
+
+    reaction(startup) {=
+        rclcpp::init(0, 0);  
+        self->rplidar_scan_publisher = std::make_shared<RPLidarScanPublisher>();
+        signal(SIGINT,ExitHandler);
+        int ret = self->rplidar_scan_publisher->work_loop();
+        rclcpp::shutdown();
+    =}
+
+    reaction(shutdown) {= =}
+}

@@ -1,0 +1,30 @@
+// rf2o.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "rf2o_laser_odometry/CLaserOdometry2DNode.h"
+    #include "rf2o_laser_odometry/CLaserOdometry2D.h"
+=}
+
+reactor rf2o {
+    // Instantiate the subscriber node as a sate variable
+    state myLaserOdomNode : std::shared_ptr<rf2o::CLaserOdometry2DNode>;
+
+    reaction(startup) {=
+
+        rclcpp::init(0, 0);
+        self->myLaserOdomNode = std::make_shared<rf2o::CLaserOdometry2DNode>() ;
+        rclcpp::Rate rate(self->myLaserOdomNode->freq);
+        while (rclcpp::ok()){
+            self->myLaserOdomNode->process();
+            rclcpp::spin_some(self->myLaserOdomNode);
+            rate.sleep();
+        }
+
+    =}
+
+    reaction(shutdown) {= =}
+}
