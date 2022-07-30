@@ -90,6 +90,8 @@ reactor Joystick {
     state name_of_joystick : char[80];
     state pause: int;
 
+    state count : int;
+
     state record_mode : int;
     state offset: interval_t;
     state press_count: int;
@@ -103,6 +105,7 @@ reactor Joystick {
         self->record_mode = -1;
         self->press_count = 0;
         self->playback = false;
+        self->count = 0;
 
 
         std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
@@ -160,16 +163,25 @@ reactor Joystick {
         //self->playback = false;
     =}
 
-    reaction(pop) -> servo_msg {=
-        lf_print("poping message");
-        lf_print("poping message");
-        lf_print("poping message");
-        lf_print("poping message");
-        lf_print("poping message");
-        lf_set(servo_msg, servoMsg);
+    reaction(pop) -> servo_msg, pop {=
+        float begin_time = lf_time_physical_elapsed();
+        if(self->count < throttle_list.size()) {
+            lf_schedule(pop, 0);
+            float elapse = lf_time_physical_elapsed() - begin_time;
+            if (elapse > time_list[self->count]) { 
+                servoMsg->angle = angle_list[self->count];
+                servoMsg->throttle = throttle_list[self->count]; 
+                lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
+                lf_print("poping message");
+                lf_print("poping message");
+                lf_print("poping message");
+                lf_set(servo_msg, servoMsg);
+                self->count++;
+            }
+        }
     =} 
 
-    reaction(t) -> servo_msg, activate_cam, play_back {=
+    reaction(t) -> servo_msg, activate_cam, pop {=
         self->count_++;
         js_event js, prev_js;
         int retval;
@@ -237,7 +249,7 @@ reactor Joystick {
             lf_print("Turned on play back");
             self->pause = 10;
             self->playback = true;
-            lf_schedule(play_back, 0);
+            lf_schedule(pop, 0);
         }
         if (self->record_mode>0){
             float current_time = lf_time_physical_elapsed()-self->offset;
