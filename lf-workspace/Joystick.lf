@@ -168,7 +168,6 @@ reactor Joystick {
     reaction(pop) -> servo_msg, pop {=
         float begin_time = lf_time_physical_elapsed();
         if(self->count < throttle_list.size()) {
-            lf_schedule(pop, 0);
             float elapse = lf_time_physical_elapsed() - begin_time;
             if (elapse > time_list[self->count]) { 
                 servoMsg->angle = angle_list[self->count];
@@ -176,10 +175,12 @@ reactor Joystick {
                 lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
                 lf_print("poping message");
                 lf_print("poping message");
-                lf_print("poping message");
+                lf_print("count: %d", self->count);
+                lf_print("vector size: %d", throttle_list.size());
                 lf_set(servo_msg, servoMsg);
                 self->count++;
             }
+            lf_schedule(pop, 0);
         }
     =} 
 
