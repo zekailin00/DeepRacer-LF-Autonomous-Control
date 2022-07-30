@@ -8,6 +8,7 @@ preamble {=
     #include "rclcpp/rclcpp.hpp"
     #include <pthread.h>
     #include <functional>
+    #include <cstdio>
     #include "sensor_msgs/msg/joy.hpp"
     #include "std_msgs/msg/string.hpp"
     #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
@@ -21,6 +22,7 @@ preamble {=
     public:
     ServoConversionCpp()
         : Node("servo_conversion") {
+            printf("servo conversion constructor.");
             subscription_ = 
             this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>
             ("/cmdvel_to_servo_pkg/servo_msg", 10, 
@@ -39,6 +41,7 @@ preamble {=
     std::shared_ptr<ServoConversionCpp> servo_conversion_node;
 
     void* ros_thread(void* data) {
+        printf("[LF Servo Conversion] Initialize ROS node");
         rclcpp::init(0, 0);  
         servo_conversion_node = std::make_shared<ServoConversionCpp>();
         rclcpp::spin(servo_conversion_node);
@@ -62,7 +65,7 @@ reactor ServoConversion {
     =}
 
     reaction(servo_conversion_action) -> servo_msg_output{=
-        std::cout<<"[LF Servo conversion reactor] Set output."<<std::endl;
+        printf("[servo conversion] sending servo message");
         lf_set(servo_msg_output, std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(servo_msg));
     =}
 
