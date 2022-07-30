@@ -65,6 +65,8 @@ preamble {=
             input_fstream.close();
         }
     }
+
+    std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg;
 =}
 
 
@@ -77,6 +79,7 @@ reactor Joystick {
     timer t(0, 25 ms);
 
     physical action play_back;
+    physical action pop;
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
@@ -128,13 +131,13 @@ reactor Joystick {
         //std::cout<< "[LF] Finished reactor startup."<<std::endl;
     =}
 
-    reaction(play_back) -> servo_msg {=
+    reaction(play_back) -> pop {=
         lf_print("Deserializing recorded keys");
 
         deserialize_vector(throttle_list, "throttle_list.txt");
         deserialize_vector(angle_list, "angle_list.txt");
         deserialize_vector(time_list, "time_list.txt");
-        std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
+        servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
 
         if (throttle_list.size() != angle_list.size() || throttle_list.size() != time_list.size() || time_list.size() != angle_list.size()) {
                 lf_print("ERROR: vector sizes do not match.");
@@ -151,11 +154,15 @@ reactor Joystick {
                 servoMsg->throttle = throttle_list[count]; 
                 lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
                 count++;
-                lf_set(servo_msg, servoMsg);
+                lf_schedule(pop, 0);
             }
         }
         self->playback = false;
     =}
+
+    reaction(pop) -> servo_msg {=
+        lf_set(servo_msg, servoMsg);
+    =} 
 
     reaction(t) -> servo_msg, activate_cam, play_back {=
         self->count_++;
