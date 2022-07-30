@@ -67,12 +67,16 @@ preamble {=
     }
 =}
 
+
+
 reactor Joystick {
     // Instantiate the publisher node as a sate variable
     //state joystick_node : std::shared_ptr<DeepRacerJoyControl>;
     output servo_msg:std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
     output activate_cam: bool;
     timer t(0, 25 ms);
+
+    physical action play_back;
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
@@ -116,6 +120,33 @@ reactor Joystick {
         //std::cout<< "[LF] Finished reactor startup."<<std::endl;
     =}
 
+    reaction(play_back) -> servo_msg {=
+        lf_print("Deserializing recorded keys");
+
+        deserialize_vector(throttle_list, "throttle_list.txt");
+        deserialize_vector(angle_list, "angle_list.txt");
+        deserialize_vector(time_list, "time_list.txt");
+        std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
+
+        if (throttle_list.size() != angle_list.size() || throttle_list.size() != time_list.size() || time_list.size() != angle_list.size()) {
+                lf_print("ERROR: vector sizes do not match.");
+                exit(1);
+            }
+
+        lf_print("Begin replay.");
+        float begin_time = lf_time_physical_elapsed();
+        int count = 0;
+        while(count < throttle_list.size()) {
+            float elapse = lf_time_physical_elapsed() - begin_time;
+            if (elapse > time_list[count]) { 
+                servoMsg->angle = angle_list[count];
+                servoMsg->throttle = throttle_list[count]; 
+                count++;
+                lf_set(servo_msg, servoMsg);
+            }
+        }
+    =}
+
     reaction(t) -> servo_msg, activate_cam {=
         self->count_++;
         js_event js, prev_js;
@@ -151,6 +182,7 @@ reactor Joystick {
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
         lf_set(servo_msg, servoMsg);
 
+
         if (self->pause != 0) self->pause--;
 
         if (self->data.joy_button[0] > 0 && self->pause == 0) {
@@ -164,5 +196,5 @@ reactor Joystick {
         }
     =}
 
-    reaction(shutdown) {==}
+    reaction(shutdown) {= =}
 }
