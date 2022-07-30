@@ -91,6 +91,7 @@ reactor Joystick {
     state pause: int;
 
     state count : int;
+    state begin_time: float;
 
     state record_mode : int;
     state offset: interval_t;
@@ -166,9 +167,8 @@ reactor Joystick {
     =}
 
     reaction(pop) -> servo_msg, pop {=
-        float begin_time = lf_time_physical_elapsed();
         if(self->count < throttle_list.size()) {
-            float elapse = lf_time_physical_elapsed() - begin_time;
+            float elapse = lf_time_physical_elapsed() - self->begin_time;
             if (elapse > time_list[self->count]) { 
                 servoMsg->angle = angle_list[self->count];
                 servoMsg->throttle = throttle_list[self->count]; 
@@ -178,10 +178,10 @@ reactor Joystick {
                 lf_set(servo_msg, servoMsg);
                 self->count++;
             }
+            lf_print("poping message");
+            lf_print("poping message");
+            lf_schedule(pop, 0);
         }
-        lf_print("poping message");
-        lf_print("poping message");
-        lf_schedule(pop, 0);
     =} 
 
     reaction(t) -> servo_msg, activate_cam, pop {=
@@ -252,6 +252,7 @@ reactor Joystick {
             lf_print("Turned on play back");
             self->pause = 10;
             self->playback = true;
+            self->begin_time = lf_time_physical_elapsed();
             lf_schedule(pop, 0);
         }
         if (self->record_mode>0){
