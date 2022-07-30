@@ -76,7 +76,7 @@ reactor Joystick {
     output activate_cam: bool;
     timer t(0, 25 ms);
 
-    output play_back:bool;
+    physical action play_back;
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
@@ -163,9 +163,10 @@ reactor Joystick {
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
 
         if (!self->playback) {
-            lf_print("[joystick node] angle: %f, throttle: %f", servoMsg->angle, servoMsg->throttle);
+            lf_print("angle: %f, throttle: %f", servoMsg->angle, servoMsg->throttle);
             lf_set(servo_msg, servoMsg);
         }
+
 
         if (self->pause != 0) self->pause--;
 
@@ -192,16 +193,35 @@ reactor Joystick {
             self->offset = lf_time_physical_elapsed();
             self->press_count = self->press_count + 1;
         } else if (self->data.joy_button[3] > 0 && self->pause == 0) {
+            lf_print("Turned on play back");
             self->pause = 10;
+            self->playback = true;
+            lf_print("Deserializing recorded keys");
 
-            if (!self->playback) {
-                lf_print("Turned on play back");
-                self->playback = true;
-                lf_set(play_back, 0);
-            } else {
-                lf_print("Turned off play back");
-                self->playback = false;
+            deserialize_vector(throttle_list, "throttle_list.txt");
+            deserialize_vector(angle_list, "angle_list.txt");
+            deserialize_vector(time_list, "time_list.txt");
+            std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
+
+            if (throttle_list.size() != angle_list.size() || throttle_list.size() != time_list.size() || time_list.size() != angle_list.size()) {
+                    lf_print("ERROR: vector sizes do not match.");
+                    exit(1);
+                }
+
+            lf_print("Begin replay.");
+            float begin_time = lf_time_physical_elapsed();
+            int count = 0;
+            while(count < throttle_list.size()) {
+                float elapse = lf_time_physical_elapsed() - begin_time;
+                if (elapse > time_list[count]) { 
+                    servoMsg->angle = angle_list[count];
+                    servoMsg->throttle = throttle_list[count]; 
+                    lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
+                    count++;
+                    lf_set(servo_msg, servoMsg);
+                }
             }
+            self->playback = false;
         }
         if (self->record_mode>0){
             float current_time = lf_time_physical_elapsed()-self->offset;
