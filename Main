@@ -48,7 +48,7 @@ fi
 # to be responsive to user inputs after all federates
 # are launched.
 RTI -i ${FEDERATION_ID} \
-                        -n 7 \
+                        -n 6 \
                         -c init \
 exchanges-per-interval 10 \
 &
@@ -59,26 +59,23 @@ RTI=$!
 # from the RTI, but here we use sleep)
 sleep 1
 echo "#### Launching the federate Camera."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
 pids[0]=$!
 echo "#### Launching the federate Joystick."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
 pids[1]=$!
 echo "#### Launching the federate Servo."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
 pids[2]=$!
 echo "#### Launching the federate Camera_test."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
 pids[3]=$!
 echo "#### Launching the federate Rplidar."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Rplidar -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Rplidar -i $FEDERATION_ID &
 pids[4]=$!
 echo "#### Launching the federate rf2o."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_rf2o -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_rf2o -i $FEDERATION_ID &
 pids[5]=$!
-echo "#### Launching the federate ServoConversion."
-/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_ServoConversion -i $FEDERATION_ID &
-pids[6]=$!
 echo "#### Bringing the RTI back to foreground so it can receive Control-C."
 fg %1
 echo "RTI has exited. Wait for federates to exit."
