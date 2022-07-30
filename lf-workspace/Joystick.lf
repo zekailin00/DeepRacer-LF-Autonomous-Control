@@ -173,15 +173,15 @@ reactor Joystick {
                 servoMsg->angle = angle_list[self->count];
                 servoMsg->throttle = throttle_list[self->count]; 
                 lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
-                lf_print("poping message");
-                lf_print("poping message");
                 lf_print("count: %d", self->count);
                 lf_print("vector size: %d", throttle_list.size());
                 lf_set(servo_msg, servoMsg);
                 self->count++;
             }
-            lf_schedule(pop, 0);
         }
+        lf_print("poping message");
+        lf_print("poping message");
+        lf_schedule(pop, 0);
     =} 
 
     reaction(t) -> servo_msg, activate_cam, pop {=
