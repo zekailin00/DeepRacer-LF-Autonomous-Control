@@ -59,10 +59,10 @@ RTI=$!
 # from the RTI, but here we use sleep)
 sleep 1
 echo "#### Launching the federate Joystick."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/bin/Main_Joystick -i $FEDERATION_ID &
 pids[0]=$!
 echo "#### Launching the federate Servo."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/bin/Main_Servo -i $FEDERATION_ID &
 pids[1]=$!
 echo "#### Bringing the RTI back to foreground so it can receive Control-C."
 fg %1

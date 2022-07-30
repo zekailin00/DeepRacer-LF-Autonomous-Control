@@ -87,11 +87,19 @@ reactor Joystick {
     state name_of_joystick : char[80];
     state pause: int;
 
+    state record_mode : int;
+    state offset: interval_t;
+    state press_count: int;
+    state playback : bool;
+
     reaction(startup) {=
 
         self->JOYSTICK_DEV = "/dev/input/js0";
         self->count_ = 0;
         self->pause = 0;
+        self->record_mode = -1;
+        self->press_count = 0;
+        self->playback = false;
 
 
         std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
@@ -141,13 +149,15 @@ reactor Joystick {
             if (elapse > time_list[count]) { 
                 servoMsg->angle = angle_list[count];
                 servoMsg->throttle = throttle_list[count]; 
+                lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
                 count++;
                 lf_set(servo_msg, servoMsg);
             }
         }
+        self->playback = false;
     =}
 
-    reaction(t) -> servo_msg, activate_cam {=
+    reaction(t) -> servo_msg, activate_cam, play_back {=
         self->count_++;
         js_event js, prev_js;
         int retval;
@@ -180,12 +190,16 @@ reactor Joystick {
         auto physical_time = get_elapsed_physical_time();
         //lf_print( "physical time: %lld", physical_time);
         //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
-        lf_set(servo_msg, servoMsg);
+
+        if (!self->playback) {
+            lf_print("angle: %f, throttle: %f", servoMsg->angle, servoMsg->throttle);
+            lf_set(servo_msg, servoMsg);
+        }
 
 
         if (self->pause != 0) self->pause--;
 
-        if (self->data.joy_button[0] > 0 && self->pause == 0) {
+        if (self->data.joy_button[2] > 0 && self->pause == 0) {
             lf_set(activate_cam, true);
             lf_print("Activate Camera");
             self->pause = 10;
@@ -193,6 +207,31 @@ reactor Joystick {
             lf_set(activate_cam, false);
             lf_print("Stop Camera");
             self->pause = 10;
+        }
+        else if(self->press_count >= 2){
+            lf_print("file save");
+            serialize_vector(throttle_list, "throttle_list.txt");
+            serialize_vector(angle_list, "angle_list.txt");
+            serialize_vector(time_list, "time_list.txt");
+            self->press_count = 0;
+            self->record_mode = self->record_mode*-1;
+        } else if (self->data.joy_button[0] > 0 && self->pause == 0) {
+            self->record_mode = self->record_mode*-1;
+            lf_print("Turned on record mode");
+            self->pause = 10;
+            self->offset = lf_time_physical_elapsed();
+            self->press_count = self->press_count + 1;
+        } else if (self->data.joy_button[3] > 0 && self->pause == 0) {
+            lf_print("Turned on play back");
+            self->pause = 10;
+            self->playback = true;
+            lf_schedule(play_back, 0);
+        }
+        if (self->record_mode>0){
+            float current_time = lf_time_physical_elapsed()-self->offset;
+            angle_list.push_back(servoMsg->angle);
+            throttle_list.push_back(servoMsg->throttle);
+            time_list.push_back(current_time);
         }
     =}
 
