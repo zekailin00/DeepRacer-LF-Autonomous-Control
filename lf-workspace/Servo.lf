@@ -41,8 +41,6 @@ reactor Servo {
         self->pServoMgr->servoSubscriber(servo_msg1->value);
     =}
 
-
-
     reaction(servo_msg2) {=
         //lf_print("[LF::Servo::servo_msg] Angle: %f, Throttle %f", servo_msg->value->angle, servo_msg->value->throttle);
         self->pServoMgr->servoSubscriber(servo_msg2->value);
