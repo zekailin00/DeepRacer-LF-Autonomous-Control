@@ -1,0 +1,40 @@
+target Python;
+
+preamble {=
+    from cmdvel_to_servo_pkg.cmdvel_to_servo_node import CmdvelToServoNode
+
+    import rclpy
+    from rclpy.node import Node
+    from rclpy.executors import MultiThreadedExecutor
+    from rclpy.qos import (QoSProfile,
+                        QoSHistoryPolicy,
+                        QoSReliabilityPolicy)
+
+    import geometry_msgs.msg
+    from deepracer_interfaces_pkg.msg import ServoCtrlMsg
+    from deepracer_interfaces_pkg.srv import SetMaxSpeedSrv
+    from cmdvel_to_servo_pkg import constants
+    import math
+    import threading
+
+=}
+
+reactor Cmdvel_to_servo {
+
+    reaction(startup) {=
+        rclpy.init()
+        qos = QoSProfile(reliability=QoSReliabilityPolicy.RMW_QOS_POLICY_RELIABILITY_BEST_EFFORT,
+                        depth=1,
+                        history=QoSHistoryPolicy.RMW_QOS_POLICY_HISTORY_KEEP_LAST)
+        cmdvel_to_servo_node = CmdvelToServoNode(qos)
+        executor = MultiThreadedExecutor()
+        rclpy.spin(cmdvel_to_servo_node, executor)
+    =}
+
+    reaction(shutdown) {=
+        cmdvel_to_servo_node.destroy_node()
+        rclpy.shutdown()
+    =}
+}
+
+

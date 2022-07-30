@@ -73,12 +73,12 @@ def generate_launch_description():
         #     remappings=[('/ctrl_pkg/servo_msg', '/cmdvel_to_servo_pkg/servo_msg')]
         #     ),
 
-        # launch_ros.actions.Node(
-        #     package='cmdvel_to_servo_pkg',
-        #     namespace='cmdvel_to_servo_pkg',
-        #     executable='cmdvel_to_servo_node',
-        #     name='cmdvel_to_servo_node'
-        #     ),
+        launch_ros.actions.Node(
+            package='cmdvel_to_servo_pkg',
+            namespace='cmdvel_to_servo_pkg',
+            executable='cmdvel_to_servo_node',
+            name='cmdvel_to_servo_node'
+            ),
 
         # launch_ros.actions.Node(
         #     package='enable_deepracer_nav_pkg',
