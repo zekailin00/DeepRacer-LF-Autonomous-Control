@@ -1,0 +1,128 @@
+// src/Replay.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+#include "rclcpp/rclcpp.hpp"
+#include "sensor_msgs/msg/joy.hpp"
+#include "std_msgs/msg/string.hpp"
+#include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
+
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+#include <cstdio>
+#include <iostream>
+#include <iomanip>
+#include <sstream>
+
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/joystick.h>
+#include <fcntl.h>
+
+    #include <iostream>
+    #include <fstream>
+    #include <vector>
+    #include <string>
+
+    template<typename POD>
+    std::ostream& serialize(std::ostream& os, std::vector<POD> const& v)
+    {
+        // this only works on built in data types (PODs)
+        static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
+            "Can only serialize POD types with this function");
+
+        auto size = v.size();
+        os.write(reinterpret_cast<char const*>(&size), sizeof(size));
+        os.write(reinterpret_cast<char const*>(v.data()), v.size() * sizeof(POD));
+        return os;
+    }
+
+    template<typename POD>
+    std::istream& deserialize(std::istream& is, std::vector<POD>& v)
+    {
+        static_assert(std::is_trivial<POD>::value && std::is_standard_layout<POD>::value,
+            "Can only deserialize POD types with this function");
+
+        decltype(v.size()) size;
+        is.read(reinterpret_cast<char*>(&size), sizeof(size));
+        v.resize(size);
+        is.read(reinterpret_cast<char*>(v.data()), v.size() * sizeof(POD));
+        return is;
+    }
+
+    std::vector<float> throttle_list;
+    std::vector<float> angle_list;
+    std::vector<float> time_list;
+
+    void serialize_vector(std::vector<float> &vector, std::string filename) {
+        std::fstream output_fstream;
+
+        output_fstream.open(filename, std::ios_base::out);
+        if(!output_fstream.is_open()) {
+            std::cout<<"ERROR: file not open - " << filename << std::endl;
+        } else {
+            serialize<float>(output_fstream, vector);
+            output_fstream.close();
+        }
+    }
+
+    void deserialize_vector(std::vector<float> &vector, std::string filename) {
+        std::fstream input_fstream;
+
+        input_fstream.open(filename, std::ios_base::in);
+        if(!input_fstream.is_open()) {
+            std::cout<<"ERROR: file not open - " << filename << std::endl;
+        } else {
+            deserialize<float>(input_fstream, vector);
+            input_fstream.close();
+        }
+    }
+
+=}
+
+reactor Replay {
+    // Instantiate the subscriber node as a sate variable
+
+    input play_back: bool
+    output servo_msg : std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+
+    reaction(startup) {= =}
+
+
+    reaction(play_back) -> servo_msg {=
+        lf_print("Deserializing recorded keys");
+
+        deserialize_vector(throttle_list, "throttle_list.txt");
+        deserialize_vector(angle_list, "angle_list.txt");
+        deserialize_vector(time_list, "time_list.txt");
+        std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
+
+        if (throttle_list.size() != angle_list.size() || throttle_list.size() != time_list.size() || time_list.size() != angle_list.size()) {
+                lf_print("ERROR: vector sizes do not match.");
+                exit(1);
+            }
+
+        lf_print("Begin replay.");
+        float begin_time = lf_time_physical_elapsed();
+        int count = 0;
+        while(count < throttle_list.size()) {
+            float elapse = lf_time_physical_elapsed() - begin_time;
+            if (elapse > time_list[count]) { 
+                servoMsg->angle = angle_list[count];
+                servoMsg->throttle = throttle_list[count]; 
+                lf_print("[playback node] angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
+                count++;
+                lf_set(servo_msg, servoMsg);
+            }
+        }
+    =}
+
+
+    reaction(shutdown) {= =}
+}

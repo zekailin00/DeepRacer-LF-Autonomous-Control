@@ -5,15 +5,19 @@ target CCpp{
 //import Camera from "Camera.lf"
 import Joystick from "Joystick.lf"
 import Servo from "Servo.lf"
+import Replay from "Replay.lf"
 //import Camera_test from "Camera_test.lf"
 
 federated reactor {
     //Camera = new Camera();
     Joystick = new Joystick();
     Servo = new Servo();
+    Replay = new Replay();
     //Camera_test = new Camera_test();
 
-    Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
+    Joystick.servo_msg -> Servo.servo_msg1 serializer "ROS2";
+    Joystick.play_back -> Replay.play_back;
+    Replay.servo_msg -> Servo.servo_msg2 serializer "ROS2";
     //Joystick.activate_cam -> Camera.media_state_input;
     //Camera.display_mjpeg -> Camera_test.display_mjpeg serializer "ROS2";
 }
