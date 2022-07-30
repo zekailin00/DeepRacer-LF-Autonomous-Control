@@ -60,8 +60,9 @@ reactor ServoConversion {
         lf_schedule_ptr = lf_schedule;
 
         lf_print("[LF Servo Conversion Reactor] Initialization...");
-        pthread_t thread1;
-        int iret = pthread_create( &thread1, NULL, ros_thread, 0);
+        lf_thread_t thread_id;
+        lf_print("Starting thread.");
+        lf_thread_create(&thread_id, &ros_thread, NULL);
     =}
 
     reaction(servo_conversion_action) -> servo_msg_output{=
