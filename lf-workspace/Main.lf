@@ -24,7 +24,7 @@ federated reactor {
 
 
     //Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
-    ServoConversion.servo_msg_output -> Servo.servo_msg serializer "ROS2";
+    //ServoConversion.servo_msg_output -> Servo.servo_msg serializer "ROS2";
     Joystick.activate_cam -> Camera.media_state_input;
     Camera.display_mjpeg -> Camera_test.display_mjpeg serializer "ROS2";
 }
