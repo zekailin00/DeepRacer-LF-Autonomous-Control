@@ -59,25 +59,25 @@ RTI=$!
 # from the RTI, but here we use sleep)
 sleep 1
 echo "#### Launching the federate Camera."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
 pids[0]=$!
 echo "#### Launching the federate Joystick."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
 pids[1]=$!
 echo "#### Launching the federate Servo."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
 pids[2]=$!
 echo "#### Launching the federate Camera_test."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
 pids[3]=$!
 echo "#### Launching the federate Rplidar."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Rplidar -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Rplidar -i $FEDERATION_ID &
 pids[4]=$!
 echo "#### Launching the federate rf2o."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_rf2o -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_rf2o -i $FEDERATION_ID &
 pids[5]=$!
 echo "#### Launching the federate ServoConversion."
-/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_ServoConversion -i $FEDERATION_ID &
+/root/lf-test/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_ServoConversion -i $FEDERATION_ID &
 pids[6]=$!
 echo "#### Bringing the RTI back to foreground so it can receive Control-C."
 fg %1
