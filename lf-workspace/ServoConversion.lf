@@ -1,0 +1,72 @@
+// src/ServoConversion.lf
+target CCpp {
+    cmake-include: "include/composition.cmake",
+    coordination: decentralized
+};
+
+preamble {=
+    #include "rclcpp/rclcpp.hpp"
+    #include <pthread.h>
+    #include <functional>
+    #include "sensor_msgs/msg/joy.hpp"
+    #include "std_msgs/msg/string.hpp"
+    #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
+
+
+    void* servo_conversion_action_ptr;
+    trigger_handle_t (*lf_schedule_ptr)(void*, interval_t); 
+    deepracer_interfaces_pkg::msg::ServoCtrlMsg servo_msg;
+
+    class ServoConversionCpp : public rclcpp::Node{
+    public:
+    ServoConversionCpp()
+        : Node("servo_conversion") {
+            subscription_ = 
+            this->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>
+            ("/cmdvel_to_servo_pkg/servo_msg", 10, 
+            std::bind(&ServoConversionCpp::topic_callback, this, std::placeholders::_1));
+        }
+
+        void topic_callback(const deepracer_interfaces_pkg::msg::ServoCtrlMsg::SharedPtr msg) const {
+            servo_msg.angle = msg->angle;
+            servo_msg.throttle = msg->throttle;
+            lf_schedule_ptr(servo_conversion_action_ptr, 0);
+        }
+        
+        rclcpp::Subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>::SharedPtr subscription_;
+    };
+
+    std::shared_ptr<ServoConversionCpp> servo_conversion_node;
+
+    void* ros_thread(void* data) {
+        rclcpp::init(0, 0);  
+        servo_conversion_node = std::make_shared<ServoConversionCpp>();
+        rclcpp::spin(servo_conversion_node);
+        rclcpp::shutdown();
+    }
+
+=}
+
+reactor ServoConversion {
+
+    physical action servo_conversion_action;
+    output servo_msg_output: std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg>;
+
+    reaction(startup) -> servo_conversion_action{=
+        servo_conversion_action_ptr = servo_conversion_action;
+        lf_schedule_ptr = lf_schedule;
+
+        lf_print("[LF Servo Conversion Reactor] Initialization...");
+        pthread_t thread1;
+        int iret = pthread_create( &thread1, NULL, ros_thread, 0);
+    =}
+
+    reaction(servo_conversion_action) -> servo_msg_output{=
+        std::cout<<"[LF Servo conversion reactor] Set output."<<std::endl;
+        lf_set(servo_msg_output, std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(servo_msg));
+    =}
+
+    reaction(shutdown) {=
+        rclcpp::shutdown();
+    =}
+}
