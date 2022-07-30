@@ -14,6 +14,7 @@ federated reactor {
     //Camera_test = new Camera_test();
 
     Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
+    Joystick.play_back -> Servo.playback;
     //Joystick.activate_cam -> Camera.media_state_input;
     //Camera.display_mjpeg -> Camera_test.display_mjpeg serializer "ROS2";
 }
