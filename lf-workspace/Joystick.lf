@@ -107,6 +107,8 @@ reactor Joystick {
         self->playback = false;
         self->count = 0;
 
+        servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
+
 
         std::cout<< "[LF] Open joystick file descriptor;"<<std::endl;
 
