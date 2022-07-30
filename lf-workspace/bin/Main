@@ -59,16 +59,16 @@ RTI=$!
 # from the RTI, but here we use sleep)
 sleep 1
 echo "#### Launching the federate Camera."
-/home/admin/zekailin00/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera -i $FEDERATION_ID &
 pids[0]=$!
 echo "#### Launching the federate Joystick."
-/home/admin/zekailin00/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Joystick -i $FEDERATION_ID &
 pids[1]=$!
 echo "#### Launching the federate Servo."
-/home/admin/zekailin00/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Servo -i $FEDERATION_ID &
 pids[2]=$!
 echo "#### Launching the federate Camera_test."
-/home/admin/zekailin00/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
+/home/zekailin00/Desktop/DeepRacer-LF-Autonomous-Control/lf-workspace/bin/Main_Camera_test -i $FEDERATION_ID &
 pids[3]=$!
 echo "#### Bringing the RTI back to foreground so it can receive Control-C."
 fg %1
