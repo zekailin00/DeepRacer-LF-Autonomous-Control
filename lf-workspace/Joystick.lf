@@ -157,10 +157,15 @@ reactor Joystick {
                 lf_schedule(pop, 0);
             }
         }
-        self->playback = false;
+        //self->playback = false;
     =}
 
     reaction(pop) -> servo_msg {=
+        lf_print("poping message");
+        lf_print("poping message");
+        lf_print("poping message");
+        lf_print("poping message");
+        lf_print("poping message");
         lf_set(servo_msg, servoMsg);
     =} 
 
