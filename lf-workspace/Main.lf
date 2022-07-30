@@ -9,7 +9,8 @@ import Camera_test from "Camera_test.lf"
 
 import rf2o from "rf2o.lf"
 import Rplidar from "Rplidar.lf"
-import ServoConversion from "ServoConversion.lf"
+//import ServoConversion from "ServoConversion.lf"
+import Servo_ros_wrapper from "Servo_ros_wrapper.lf"
 
 federated reactor {
     Camera = new Camera();
@@ -20,11 +21,12 @@ federated reactor {
 
     Rplidar = new Rplidar();
     rf2o = new rf2o();
-    ServoConversion = new ServoConversion();
+    //ServoConversion = new ServoConversion();
+    Servo_ros_wrapper = new Servo_ros_wrapper();
 
 
-    //Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
-    ServoConversion.servo_msg_output -> Servo.servo_msg serializer "ROS2";
+    Joystick.servo_msg -> Servo.servo_msg serializer "ROS2";
+    //ServoConversion.servo_msg_output -> Servo.servo_msg serializer "ROS2";
     Joystick.activate_cam -> Camera.media_state_input;
     Camera.display_mjpeg -> Camera_test.display_mjpeg serializer "ROS2";
 }
