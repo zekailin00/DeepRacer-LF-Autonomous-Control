@@ -79,7 +79,7 @@ reactor Joystick {
     timer t(0, 25 ms);
 
     physical action play_back;
-    physical action pop;
+    logical action pop;
 
     state count_ : size_t;
     state JOYSTICK_DEV : std::string;
