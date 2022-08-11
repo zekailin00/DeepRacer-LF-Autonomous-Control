@@ -78,7 +78,6 @@ reactor Joystick {
     output activate_cam: bool;
     timer t(0, 25 ms);
 
-    physical action play_back;
     logical action pop;
 
     state count_ : size_t;
@@ -91,7 +90,7 @@ reactor Joystick {
     state pause: int;
 
     state count : int;
-    state begin_time: float;
+    state prev_time: float;
 
     state record_mode : int;
     state offset: interval_t;
@@ -107,6 +106,7 @@ reactor Joystick {
         self->press_count = 0;
         self->playback = false;
         self->count = 0;
+        self->prev_time=0;
 
         servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
 
@@ -137,50 +137,16 @@ reactor Joystick {
         //std::cout<< "[LF] Finished reactor startup."<<std::endl;
     =}
 
-    reaction(play_back) -> pop {=
-        lf_print("Deserializing recorded keys");
-
-        deserialize_vector(throttle_list, "throttle_list.txt");
-        deserialize_vector(angle_list, "angle_list.txt");
-        deserialize_vector(time_list, "time_list.txt");
-        servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(); 
-
-        if (throttle_list.size() != angle_list.size() || throttle_list.size() != time_list.size() || time_list.size() != angle_list.size()) {
-                lf_print("ERROR: vector sizes do not match.");
-                exit(1);
-            }
-
-        lf_print("Begin replay.");
-        float begin_time = lf_time_physical_elapsed();
-        int count = 0;
-        while(count < throttle_list.size()) {
-            float elapse = lf_time_physical_elapsed() - begin_time;
-            if (elapse > time_list[count]) { 
-                servoMsg->angle = angle_list[count];
-                servoMsg->throttle = throttle_list[count]; 
-                lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
-                count++;
-                lf_schedule(pop, 0);
-            }
-        }
-        //self->playback = false;
-    =}
-
     reaction(pop) -> servo_msg, pop {=
         if(self->count < throttle_list.size()) {
-            float elapse = lf_time_physical_elapsed() - self->begin_time;
-            if (elapse > time_list[self->count]) { 
-                servoMsg->angle = angle_list[self->count];
-                servoMsg->throttle = throttle_list[self->count]; 
-                lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, elapse);
-                lf_print("count: %d", self->count);
-                lf_print("vector size: %d", throttle_list.size());
-                lf_set(servo_msg, servoMsg);
-                self->count++;
-            }
+            servoMsg->angle = angle_list[self->count];
+            servoMsg->throttle = throttle_list[self->count]; 
+            lf_print("playback: angle: %f, throttle: %f at %f", servoMsg->angle, servoMsg->throttle, time_list[self->count]);
+            lf_set(servo_msg, servoMsg);
+            self->count++;
+
             lf_print("poping message");
-            lf_print("poping message");
-            lf_schedule(pop, 0);
+            lf_schedule(pop, time_list[self->count]);
         }
     =} 
 
@@ -208,15 +174,10 @@ reactor Joystick {
             }
         }
 
-        //lf_print( "Exit while(read) - Return value of read is: %d", retval);
-        //lf_print( "Exit while(read) - while count: %d", while_count);
-
         std::shared_ptr<deepracer_interfaces_pkg::msg::ServoCtrlMsg> servoMsg = std::make_shared<deepracer_interfaces_pkg::msg::ServoCtrlMsg>();  
         servoMsg->angle = -(static_cast<float>(self->data.joy_axis[0])/INT16_MAX);
         servoMsg->throttle = -(static_cast<float>(self->data.joy_axis[1])/INT16_MAX); 
         auto physical_time = get_elapsed_physical_time();
-        //lf_print( "physical time: %lld", physical_time);
-        //lf_print( "Send message at step %d: angle %f, throttle %f", self->count_, servoMsg->angle, servoMsg->throttle);
 
         if (!self->playback) {
             lf_print("angle: %f, throttle: %f", servoMsg->angle, servoMsg->throttle);
@@ -246,20 +207,20 @@ reactor Joystick {
             self->record_mode = self->record_mode*-1;
             lf_print("Turned on record mode");
             self->pause = 10;
-            self->offset = lf_time_physical_elapsed();
+            self->prev_time = lf_time_logical_elapsed();
             self->press_count = self->press_count + 1;
         } else if (self->data.joy_button[3] > 0 && self->pause == 0) {
             lf_print("Turned on play back");
             self->pause = 10;
             self->playback = true;
-            self->begin_time = lf_time_physical_elapsed();
-            lf_schedule(pop, 0);
+            lf_schedule(pop, time_list[self->count]);
         }
         if (self->record_mode>0){
-            float current_time = lf_time_physical_elapsed()-self->offset;
+            float current_time = lf_time_logical_elapsed();
             angle_list.push_back(servoMsg->angle);
             throttle_list.push_back(servoMsg->throttle);
-            time_list.push_back(current_time);
+            time_list.push_back(current_time-self->prev_time);
+            self->prev_time = current_time;
         }
     =}
 
